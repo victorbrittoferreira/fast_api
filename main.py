@@ -15,25 +15,26 @@ books = sqlalchemy.Table(
     sqlalchemy.Column("author", sqlalchemy.String),
 )
 
-engine = sqlalchemy.create_engine(DATABASE_URL)
-metadata.create_all()
+# engine = sqlalchemy.create_engine(DATABASE_URL)
+# metadata.create_all(engine)
+
+
 
 app = FastAPI()
 
 #Middleware
 @app.on_event("startup")
 async def startup():
-    await database.connect
+    await database.connect()
 
-@app.on_event("shutodwn")
-async def shutodwn():
-    await database.disconnect
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
 
 @app.get("/books/")
 async def read_books():
     query = books.select()
     return await database.fetch_all(query)
-
 
 @app.post("/books/")
 async def create_books(request: Request):
