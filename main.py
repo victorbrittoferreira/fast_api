@@ -7,6 +7,10 @@ DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/store"
 database = databases.Database(DATABASE_URL)
 metadata = sqlalchemy.MetaData()
 
+# engine = sqlalchemy.create_engine(DATABASE_URL)
+# metadata.create_all(engine)
+
+# M O D E L S
 books = sqlalchemy.Table(
     "books",
     metadata,
@@ -15,12 +19,9 @@ books = sqlalchemy.Table(
     sqlalchemy.Column("author", sqlalchemy.String),
     sqlalchemy.Column("pages", sqlalchemy.Integer),
     # ForeingKey(NameOfTable) O2O
-    sqlalchemy.Column("reader_id", sqlalchemy.ForeignKey("readers.id"), nullable=False, index=True),
+    #sqlalchemy.Column("reader_id", sqlalchemy.ForeignKey("readers.id"), nullable=False, index=True),
 
 )
-
-# engine = sqlalchemy.create_engine(DATABASE_URL)
-# metadata.create_all(engine)
 
 readers = sqlalchemy.Table(
     "readers",
@@ -30,8 +31,14 @@ readers = sqlalchemy.Table(
     sqlalchemy.Column("last_name", sqlalchemy.String),
 )
 
-
-
+#M2M
+readers_books = sqlalchemy.Table(
+    "readers_books",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("book_id",sqlalchemy.ForeignKey("books.id"), nullable=False, index=True),
+    sqlalchemy.Column("reader_id",sqlalchemy.ForeignKey("readers.id"), nullable=False, index=True),
+)
 
 app = FastAPI()
 
@@ -44,10 +51,9 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-@app.get("/books/")
-async def read_books():
-    query = books.select()
-    return await database.fetch_all(query)
+# V I E W 
+
+#BOOKS
 
 @app.post("/books/")
 async def create_books(request: Request):
@@ -57,4 +63,25 @@ async def create_books(request: Request):
     last_record_id = await database.execute(query)
     
     return {"id": last_record_id}
+
+@app.get("/books/")
+async def read_books():
+    query = books.select()
+    return await database.fetch_all(query)
+
+#READERS 
+@app.post("/readers/")
+async def create_readers(request: Request):
+    data = await request.json()
+    #...(title = data.get("title"), author=data.get("author"))
+    query = readers.insert().values(**data)
+    last_record_id = await database.execute(query)
     
+    return {"id": last_record_id}
+
+@app.post("/read/")
+async def read_book(request: Request):
+    data = await request.json()
+    query = readers_books.insert().values(**data)
+    last_record_id = await database.execute(query)
+    return {"id": last_record_id}

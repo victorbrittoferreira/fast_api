@@ -1,0 +1,8 @@
+#Runserver
+uvicorn main:app --reload
+
+#Makemigrations
+alembic revision --autogenerate -m "tag/name"        
+
+#Migrate
+alembic upgrade head
